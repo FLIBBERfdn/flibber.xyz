@@ -308,12 +308,14 @@ export default function LandingPage() {
       `}</style>
 
       {/* ── Nav ─────────────────────────────────────────────── */}
-      <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)' }}>
+      <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img src="/flibber.png" alt="F" style={{ width: 28, height: 28, borderRadius: '8px', objectFit: 'cover' }} onError={e => e.target.style.display='none'} />
           <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '14px', fontWeight: '500', letterSpacing: '0.1em', color: '#ECEEF1' }}>FLIBBER</span>
         </div>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+
+        {/* Desktop nav */}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }} className="landing-desktop-nav">
           {navLinks.map(l => (
             <a key={l.label} href={l.href} target={l.external ? '_blank' : undefined} rel={l.external ? 'noopener noreferrer' : undefined}
               style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#4B5563', transition: 'color 0.2s' }}
@@ -326,13 +328,15 @@ export default function LandingPage() {
             Waitlist
           </button>
         </nav>
+
         <Link href={DAPP_URL} style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#000', background: '#ECEEF1', padding: '9px 22px', borderRadius: '20px', fontWeight: '500' }}>
           Launch App
         </Link>
       </header>
+      <style>{`.landing-desktop-nav { display: flex; } @media (max-width: 768px) { .landing-desktop-nav { display: none; } }`}</style>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section style={{ minHeight: '92vh', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '100px 80px 60px', position: 'relative', overflow: 'hidden', maxWidth: '1200px', margin: '0 auto', gap: '60px', flexWrap: 'wrap' }}>
+      <section style={{ minHeight: '92vh', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '100px 24px 60px', position: 'relative', overflow: 'hidden', maxWidth: '1200px', margin: '0 auto', gap: '60px', flexWrap: 'wrap' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(184,190,200,0.06), transparent)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: '520px', position: 'relative', zIndex: 1 }}>
           <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#4B5563', marginBottom: '20px' }}>

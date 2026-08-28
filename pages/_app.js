@@ -142,7 +142,7 @@ export default function App({ Component, pageProps }) {
         <link rel="icon" href="/flibber.png" />
       </Head>
 
-      {router.pathname !== '/admin' && (
+      {router.pathname !== '/admin' && router.pathname !== '/' && (
         <Navbar
           account={account}
           onConnect={connect}
@@ -152,7 +152,7 @@ export default function App({ Component, pageProps }) {
         />
       )}
 
-      {wrongNetwork && router.pathname !== '/admin' && (
+      {wrongNetwork && router.pathname !== '/admin' && router.pathname !== '/' && (
         <div style={{ background: 'rgba(255,68,68,0.08)', borderBottom: '1px solid rgba(255,68,68,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '13px', color: 'var(--red)', zIndex: 10, position: 'relative' }}>
           <span>Wrong network — switch to Base Sepolia</span>
           <button onClick={switchToBaseSepolia} style={{ background: 'var(--red)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>Switch</button>
