@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg:     #050505;
+  --bg2:    #0F1115;
+  --card:   #1A1D22;
+  --border: #2A2F36;
+  --muted:  #4B5563;
+  --silver: #B8BEC8;
+  --msilver:#D4D8DE;
+  --plat:   #ECEEF1;
+  --white:  #FFFFFF;
+  --green:  #00FF87;
+  --green2: #00CC6A;
+  --blue:   #0EA5E9;
+  --red:    #FF4444;
+  --text:   #ECEEF1;
+  --text2:  #B8BEC8;
+  --text3:  #4B5563;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%,   rgba(0,255,135,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 100%,  rgba(14,165,233,0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Typography ─────────────────────────────────────── */
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── Animations ─────────────────────────────────────── */
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeIn  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse   { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes slideIn { from { transform:translateX(-100%); } to { transform:translateX(0); } }
+
+.animate-in { animation: fadeIn 0.3s ease forwards; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Card ───────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+/* ── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Mobile bottom nav spacing ──────────────────────── */
+@media (max-width: 768px) {
+  .page-content { padding-bottom: 80px; }
+}
