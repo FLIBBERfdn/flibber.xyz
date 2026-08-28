@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 const ADMIN_WALLET = "0xa388C71f0D69d33455cf25f6c71F7eA37f98745B"
 
 const NAV_LINKS = [
-  { href: '/',           label: 'Slot',    icon: '◈' },
+  { href: '/slot',       label: 'Slot',    icon: '◈' },
   { href: '/pool',       label: 'Pool',    icon: '◉' },
   { href: '/stake',      label: 'Stake',   icon: '◎' },
   { href: '/governance', label: 'Govern',  icon: '◐' },
@@ -14,7 +14,7 @@ const NAV_LINKS = [
 ]
 
 const BOTTOM_NAV = [
-  { href: '/',        label: 'Slot',    icon: '◈' },
+  { href: '/slot',    label: 'Slot',    icon: '◈' },
   { href: '/pool',    label: 'Pool',    icon: '◉' },
   { href: '/faucet',  label: 'Faucet',  icon: '◑' },
   { href: '/history', label: 'History', icon: '◒' },
