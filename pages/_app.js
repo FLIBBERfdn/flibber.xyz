@@ -26,37 +26,45 @@ const baseSepolia = {
 }
 
 let modalInstance = null
+let modalLoadPromise = null
 
 async function getModal() {
   if (modalInstance) return modalInstance
-  const { createAppKit } = await import('@reown/appkit')
-  const { EthersAdapter } = await import('@reown/appkit-adapter-ethers')
+  // Dedupe concurrent calls (e.g. useEffect + a fast tap) into one load.
+  if (modalLoadPromise) return modalLoadPromise
 
-  const ethersAdapter = new EthersAdapter()
+  modalLoadPromise = (async () => {
+    const { createAppKit } = await import('@reown/appkit')
+    const { EthersAdapter } = await import('@reown/appkit-adapter-ethers')
 
-  modalInstance = createAppKit({
-    adapters: [ethersAdapter],
-    networks: [baseSepolia],
-    metadata,
-    projectId: PROJECT_ID,
-    features: { analytics: false },
-    themeMode: 'dark',
-    themeVariables: {
-      '--w3m-color-mix': '#050505',
-      '--w3m-color-mix-strength': 40,
-      '--w3m-accent': '#ECEEF1',
-      '--w3m-border-radius-master': '12px',
-      '--w3m-font-family': 'Manrope, sans-serif',
-    },
-    featuredWalletIds: [
-      'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96',
-      'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa',
-      '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0',
-      '1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369',
-    ],
-  })
+    const ethersAdapter = new EthersAdapter()
 
-  return modalInstance
+    modalInstance = createAppKit({
+      adapters: [ethersAdapter],
+      networks: [baseSepolia],
+      metadata,
+      projectId: PROJECT_ID,
+      features: { analytics: false },
+      themeMode: 'dark',
+      themeVariables: {
+        '--w3m-color-mix': '#050505',
+        '--w3m-color-mix-strength': 40,
+        '--w3m-accent': '#ECEEF1',
+        '--w3m-border-radius-master': '12px',
+        '--w3m-font-family': 'Manrope, sans-serif',
+      },
+      featuredWalletIds: [
+        'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96',
+        'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa',
+        '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0',
+        '1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369',
+      ],
+    })
+
+    return modalInstance
+  })()
+
+  return modalLoadPromise
 }
 
 export default function App({ Component, pageProps }) {
@@ -76,34 +84,36 @@ export default function App({ Component, pageProps }) {
     try {
       const m = await getModal()
       setModal(m)
-
-      // Subscribe to account changes
-      m.subscribeAccount(({ address, isConnected }) => {
-        if (isConnected && address) {
-          setAccount(address)
-          getProvider(m)
-        } else {
-          setAccount(null)
-          setProvider(null)
-          setChainId(null)
-        }
-      })
-
-      // Subscribe to network changes
-      m.subscribeNetwork(({ chainId: cid }) => {
-        if (cid) setChainId(Number(cid))
-      })
-
-      // Check if already connected
-      const state = m.getAccount()
-      if (state?.isConnected && state?.address) {
-        setAccount(state.address)
-        getProvider(m)
-      }
-
+      wireModalSubscriptions(m)
     } catch(e) {
-      console.error('AppKit init failed, using MetaMask fallback:', e)
+      console.error('AppKit init failed, using injected-provider fallback:', e)
       fallbackAutoConnect()
+    }
+  }
+
+  const wireModalSubscriptions = (m) => {
+    // Subscribe to account changes
+    m.subscribeAccount(({ address, isConnected }) => {
+      if (isConnected && address) {
+        setAccount(address)
+        getProvider(m)
+      } else {
+        setAccount(null)
+        setProvider(null)
+        setChainId(null)
+      }
+    })
+
+    // Subscribe to network changes
+    m.subscribeNetwork(({ chainId: cid }) => {
+      if (cid) setChainId(Number(cid))
+    })
+
+    // Check if already connected
+    const state = m.getAccount()
+    if (state?.isConnected && state?.address) {
+      setAccount(state.address)
+      getProvider(m)
     }
   }
 
@@ -135,15 +145,41 @@ export default function App({ Component, pageProps }) {
     } catch(e) { console.error(e) }
   }
 
+  // IMPORTANT (mobile fix): previously this checked `if (modal)` — React
+  // state set from the useEffect's initAppKit() call. On mobile, JS often
+  // hasn't finished loading AppKit by the time the user taps Connect, so
+  // `modal` was still null and this fell through to the window.ethereum
+  // fallback, which does nothing on mobile Safari/Chrome (no injected
+  // provider outside a wallet's own in-app browser). Now we always try
+  // getModal() directly — it's memoized, so it's instant once loaded once,
+  // and only truly awaits on that first race.
   const connect = async () => {
-    if (modal) {
-      modal.open({ view: 'Connect' })
-      return
-    }
-    // MetaMask fallback
     setConnecting(true)
     try {
-      if (!window.ethereum) return alert('Please install a wallet like MetaMask')
+      const m = modal || await getModal()
+      if (m) {
+        if (!modal) {
+          setModal(m)
+          wireModalSubscriptions(m)
+        }
+        m.open({ view: 'Connect' })
+        setConnecting(false)
+        return
+      }
+    } catch (e) {
+      console.error('AppKit unavailable, falling back to injected provider:', e)
+    }
+
+    // Injected-provider fallback: MetaMask browser extension on desktop,
+    // or a wallet's own in-app browser on mobile (Trust Wallet, MetaMask
+    // mobile browser, Coinbase Wallet browser, etc. all inject window.ethereum
+    // when you open your dapp URL *inside* their app).
+    try {
+      if (!window.ethereum) {
+        alert('No wallet detected in this browser. On mobile, either tap Connect to use WalletConnect (scan/deep-link), or open this site from inside your wallet app\'s built-in browser.')
+        setConnecting(false)
+        return
+      }
       const { ethers } = await import('ethers')
       const p = new ethers.BrowserProvider(window.ethereum)
       await p.send('eth_requestAccounts', [])
