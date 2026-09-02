@@ -151,7 +151,7 @@ export default function App({ Component, pageProps }) {
   // `modal` was still null and this fell through to the window.ethereum
   // fallback, which does nothing on mobile Safari/Chrome (no injected
   // provider outside a wallet's own in-app browser). Now we always try
-  // getModal() directly — its memoized, so it's instant once loaded once,
+  // getModal() directly — it's memoized, so it's instant once loaded once,
   // and only truly awaits on that first race.
   const connect = async () => {
     setConnecting(true)
