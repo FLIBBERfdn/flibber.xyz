@@ -104,7 +104,7 @@ export default function App({ Component, pageProps }) {
 
   const connect = async () => {
     if (w3m) {
-      w3m.open()
+      w3m.open({ view: 'Connect' })
       return
     }
     // Fallback to MetaMask
