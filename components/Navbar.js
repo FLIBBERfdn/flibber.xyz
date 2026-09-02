@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useAppKitWallet } from '@reown/appkit-wallet-button/react'
 
 const ADMIN_WALLET = "0xa388C71f0D69d33455cf25f6c71F7eA37f98745B"
 
@@ -19,6 +20,55 @@ const BOTTOM_NAV = [
   { href: '/faucet',  label: 'Faucet',  icon: '◑' },
   { href: '/history', label: 'History', icon: '◒' },
 ]
+
+// Wallets that get their own instant-connect button on mobile.
+// Each one fires the deep link directly on tap — no modal/relay step in
+// between — which is what actually gets iOS to switch apps.
+const QUICK_WALLETS = [
+  { id: 'metamask',       label: 'MetaMask' },
+  { id: 'trust',          label: 'Trust Wallet' },
+  { id: 'coinbaseWallet', label: 'Coinbase' },
+]
+
+// Small row of one-tap wallet buttons, used in both the mobile slide-in
+// menu and could be reused elsewhere. Falls back to the regular AppKit
+// modal (onConnect) for anything not in QUICK_WALLETS, e.g. via QR.
+function QuickConnectWallets({ onConnect, onDone }) {
+  const { isReady, isPending, connect } = useAppKitWallet({
+    onSuccess: () => { if (onDone) onDone() },
+    onError: (err) => { console.error('Wallet button connect failed:', err) },
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {QUICK_WALLETS.map(w => (
+        <button
+          key={w.id}
+          disabled={isPending}
+          onClick={() => connect(w.id)}
+          style={{
+            width: '100%', padding: '12px', borderRadius: '10px',
+            background: 'var(--card)', border: '1px solid var(--border)',
+            color: 'var(--plat)', fontSize: '13px', fontWeight: '700',
+            cursor: isPending ? 'default' : 'pointer',
+            opacity: isPending ? 0.6 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}
+        >
+          {isPending ? 'Connecting…' : w.label}
+        </button>
+      ))}
+
+      <button onClick={() => { onConnect(); if (onDone) onDone() }} style={{
+        width: '100%', padding: '12px', borderRadius: '10px',
+        background: 'transparent', border: '1px solid var(--border)',
+        color: 'var(--muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+      }}>
+        More wallets / QR code
+      </button>
+    </div>
+  )
+}
 
 export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting }) {
   const router  = useRouter()
@@ -227,14 +277,11 @@ export default function Navbar({ account, onConnect, onDisconnect, chainId, conn
                   }}>Disconnect</button>
                 </>
               ) : (
-                <button onClick={() => { onConnect(); setMenuOpen(false) }} style={{
-                  width: '100%', padding: '13px', borderRadius: '10px',
-                  background: 'var(--plat)', border: 'none',
-                  color: 'var(--bg)', fontSize: '14px', fontWeight: '800', cursor: 'pointer',
-                  letterSpacing: '0.04em',
-                }}>
-                  Connect Wallet
-                </button>
+                // Direct one-tap wallet buttons instead of a single generic
+                // "Connect Wallet" button that opens the modal (which was
+                // failing to deep-link on iOS). Tapping a specific wallet
+                // here fires its deep link immediately, in the same tap.
+                <QuickConnectWallets onConnect={onConnect} onDone={() => setMenuOpen(false)} />
               )}
             </div>
           </div>
