@@ -29,7 +29,7 @@ let modalInstance = null
 
 async function getModal() {
   if (modalInstance) return modalInstance
-  const { createAppKit } = await import('@reown/appkit/react')
+  const { createAppKit } = await import('@reown/appkit')
   const { EthersAdapter } = await import('@reown/appkit-adapter-ethers')
 
   const ethersAdapter = new EthersAdapter()
