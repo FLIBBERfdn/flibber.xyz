@@ -390,9 +390,9 @@ export default function SlotPage({ account, provider, onConnect }) {
       {/* Info cards */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: '480px' }}>
         {[
-          { icon: '⚡', title: 'Instant',    desc: '~3-10 second fills' },
-          { icon: '🔒', title: '100% Value', desc: 'Min 8 FIB fee'     },
-          { icon: '🔮', title: 'Live Price', desc: 'Chainlink oracle'   },
+          { icon: '', title: 'Instant',    desc: '~3-10 second fills' },
+          { icon: '', title: '100% Value', desc: 'Min 8 FIB fee'     },
+          { icon: '', title: 'Live Price', desc: 'Chainlink oracle'   },
         ].map(c => (
           <div key={c.title} style={{ flex: 1, minWidth: '110px', padding: '14px', borderRadius: '12px', background: 'var(--card)', border: '1px solid var(--border)', textAlign: 'center' }}>
             <div style={{ fontSize: '18px', marginBottom: '5px' }}>{c.icon}</div>
