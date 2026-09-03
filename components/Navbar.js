@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useAppKitWallet } from '@reown/appkit-wallet-button/react'
 
 const ADMIN_WALLET = "0xa388C71f0D69d33455cf25f6c71F7eA37f98745B"
 
@@ -21,80 +20,11 @@ const BOTTOM_NAV = [
   { href: '/history', label: 'History', icon: '◒' },
 ]
 
-// Wallets that use AppKit's own wallet-button hook (WalletConnect deep
-// link). MetaMask is deliberately NOT here — its AppKit deep-link is
-// currently broken on mobile (confirmed Reown bug), so it gets its own
-// dedicated connect path via @metamask/sdk instead. See onConnectMetaMask.
-const APPKIT_QUICK_WALLETS = [
-  { id: 'trust',          label: 'Trust Wallet' },
-  { id: 'coinbaseWallet', label: 'Coinbase' },
-]
-
-// Small row of one-tap wallet buttons for the mobile slide-in menu.
-// MetaMask uses its own SDK-backed connect function (onConnectMetaMask).
-// Everything else uses AppKit's wallet-button hook. "More wallets / QR"
-// falls back to the regular AppKit modal for anything not listed here.
-function QuickConnectWallets({ onConnect, onConnectMetaMask, onDone }) {
-  const { isPending, connect } = useAppKitWallet({
-    onSuccess: () => { if (onDone) onDone() },
-    onError: (err) => { console.error('Wallet button connect failed:', err) },
-  })
-
-  const handleMetaMask = async () => {
-    await onConnectMetaMask()
-    if (onDone) onDone()
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <button
-        onClick={handleMetaMask}
-        style={{
-          width: '100%', padding: '12px', borderRadius: '10px',
-          background: 'var(--card)', border: '1px solid var(--border)',
-          color: 'var(--plat)', fontSize: '13px', fontWeight: '700',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        }}
-      >
-        MetaMask
-      </button>
-
-      {APPKIT_QUICK_WALLETS.map(w => (
-        <button
-          key={w.id}
-          disabled={isPending}
-          onClick={() => connect(w.id)}
-          style={{
-            width: '100%', padding: '12px', borderRadius: '10px',
-            background: 'var(--card)', border: '1px solid var(--border)',
-            color: 'var(--plat)', fontSize: '13px', fontWeight: '700',
-            cursor: isPending ? 'default' : 'pointer',
-            opacity: isPending ? 0.6 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}
-        >
-          {isPending ? 'Connecting…' : w.label}
-        </button>
-      ))}
-
-      <button onClick={() => { onConnect(); if (onDone) onDone() }} style={{
-        width: '100%', padding: '12px', borderRadius: '10px',
-        background: 'transparent', border: '1px solid var(--border)',
-        color: 'var(--muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-      }}>
-        More wallets / QR code
-      </button>
-    </div>
-  )
-}
-
-export default function Navbar({ account, onConnect, onConnectMetaMask, onDisconnect, chainId, connecting }) {
+export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting }) {
   const router  = useRouter()
-  const [menuOpen,     setMenuOpen]     = useState(false)
-  const [walletOpen,   setWalletOpen]   = useState(false)
-  const [isMobile,     setIsMobile]     = useState(false)
-  const [walletPicker, setWalletPicker] = useState(false)
+  const [menuOpen,   setMenuOpen]   = useState(false)
+  const [walletOpen, setWalletOpen] = useState(false)
+  const [isMobile,   setIsMobile]   = useState(false)
 
   const short   = a => a ? `${a.slice(0,6)}...${a.slice(-4)}` : ''
   const isAdmin = account?.toLowerCase() === ADMIN_WALLET.toLowerCase()
@@ -108,7 +38,7 @@ export default function Navbar({ account, onConnect, onConnectMetaMask, onDiscon
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  useEffect(() => { setMenuOpen(false); setWalletOpen(false); setWalletPicker(false) }, [router.pathname])
+  useEffect(() => { setMenuOpen(false); setWalletOpen(false) }, [router.pathname])
 
   useEffect(() => {
     if (isMobile && menuOpen) document.body.style.overflow = 'hidden'
@@ -296,27 +226,14 @@ export default function Navbar({ account, onConnect, onConnectMetaMask, onDiscon
                     color: 'var(--red)', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
                   }}>Disconnect</button>
                 </>
-              ) : walletPicker ? (
-                // Revealed after tapping "Connect Wallet" — pick a specific
-                // wallet here instead of everything being shown up front.
-                <>
-                  <QuickConnectWallets onConnect={onConnect} onConnectMetaMask={onConnectMetaMask} onDone={() => { setMenuOpen(false); setWalletPicker(false) }} />
-                  <button onClick={() => setWalletPicker(false)} style={{
-                    width: '100%', marginTop: '8px', padding: '10px',
-                    background: 'transparent', border: 'none',
-                    color: 'var(--muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                  }}>
-                    ← Back
-                  </button>
-                </>
               ) : (
-                <button onClick={() => setWalletPicker(true)} style={{
+                <button onClick={() => { onConnect(); setMenuOpen(false) }} style={{
                   width: '100%', padding: '13px', borderRadius: '10px',
                   background: 'var(--plat)', border: 'none',
                   color: 'var(--bg)', fontSize: '14px', fontWeight: '800', cursor: 'pointer',
                   letterSpacing: '0.04em',
                 }}>
-                  {connecting ? 'Connecting…' : 'Connect Wallet'}
+                  Connect Wallet
                 </button>
               )}
             </div>
