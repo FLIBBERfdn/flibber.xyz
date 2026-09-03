@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider, useAccount, useDisconnect, useWalletClient } from 'wagmi'
+import { WagmiProvider, useAccount, useDisconnect, useWalletClient, useSwitchChain } from 'wagmi'
 import { RainbowKitProvider, getDefaultConfig, darkTheme, useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit'
 import { BrowserProvider } from 'ethers'
 import Navbar from '../components/Navbar'
@@ -52,11 +52,18 @@ function AppInner({ Component, pageProps, router }) {
   const { data: walletClient } = useWalletClient()
   const { openConnectModal, connectModalOpen } = useConnectModal()
   const { openAccountModal } = useAccountModal()
+  const { switchChain, isPending: switchingNetwork } = useSwitchChain()
 
   const provider = useMemo(() => walletClientToEthersProvider(walletClient), [walletClient])
 
   const connect = () => {
     openConnectModal?.()
+  }
+
+  // Directly asks the wallet to switch (or add, if it doesn't already know
+  // Base Sepolia) — no extra modal needed, this prompts the wallet itself.
+  const switchNetwork = () => {
+    switchChain?.({ chainId: 84532 })
   }
 
   const wrongNetwork = isConnected && chainId !== 84532
@@ -79,7 +86,8 @@ function AppInner({ Component, pageProps, router }) {
           chainId={chainId}
           connecting={connectModalOpen}
           wrongNetwork={wrongNetwork}
-          onSwitchNetwork={() => openAccountModal?.()}
+          onSwitchNetwork={switchNetwork}
+          switchingNetwork={switchingNetwork}
         />
       )}
 
@@ -89,8 +97,8 @@ function AppInner({ Component, pageProps, router }) {
           background: 'rgba(255,68,68,0.08)', borderBottom: '1px solid rgba(255,68,68,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '13px', color: 'var(--red)',
         }}>
           <span>Wrong network — switch to Base Sepolia</span>
-          <button onClick={() => openAccountModal?.()} style={{ padding: '4px 12px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '6px', color: 'var(--red)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
-            Switch Network
+          <button onClick={switchNetwork} disabled={switchingNetwork} style={{ padding: '4px 12px', background: 'var(--red)', border: 'none', borderRadius: '6px', color: '#050505', cursor: switchingNetwork ? 'default' : 'pointer', fontSize: '12px', fontWeight: '700', opacity: switchingNetwork ? 0.7 : 1 }}>
+            {switchingNetwork ? 'Switching…' : 'Switch Network'}
           </button>
         </div>
       )}

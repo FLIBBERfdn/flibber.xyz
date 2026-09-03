@@ -20,7 +20,7 @@ const BOTTOM_NAV = [
   { href: '/history', label: 'History', icon: '◒' },
 ]
 
-export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting, wrongNetwork, onSwitchNetwork }) {
+export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting, wrongNetwork, onSwitchNetwork, switchingNetwork }) {
   const router  = useRouter()
   const [menuOpen,   setMenuOpen]   = useState(false)
   const [walletOpen, setWalletOpen] = useState(false)
@@ -234,11 +234,12 @@ export default function Navbar({ account, onConnect, onDisconnect, chainId, conn
                     <div style={{ fontSize: '11px', color: 'var(--muted)', fontFamily: 'IBM Plex Mono, monospace', wordBreak: 'break-all' }}>{account}</div>
                   </div>
                   {wrongNetwork && (
-                    <button onClick={() => onSwitchNetwork?.()} style={{
+                    <button onClick={() => onSwitchNetwork?.()} disabled={switchingNetwork} style={{
                       width: '100%', padding: '11px', borderRadius: '10px', marginBottom: '8px',
-                      background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)',
-                      color: 'var(--red)', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                    }}>Switch to Base Sepolia</button>
+                      background: 'var(--red)', border: 'none',
+                      color: '#050505', fontSize: '13px', fontWeight: '800', cursor: switchingNetwork ? 'default' : 'pointer',
+                      opacity: switchingNetwork ? 0.7 : 1,
+                    }}>{switchingNetwork ? 'Switching…' : 'Switch to Base Sepolia'}</button>
                   )}
                   <button onClick={() => { onDisconnect(); setMenuOpen(false) }} style={{
                     width: '100%', padding: '11px', borderRadius: '10px',
