@@ -20,7 +20,7 @@ const BOTTOM_NAV = [
   { href: '/history', label: 'History', icon: '◒' },
 ]
 
-export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting }) {
+export default function Navbar({ account, onConnect, onDisconnect, chainId, connecting, wrongNetwork, onSwitchNetwork }) {
   const router  = useRouter()
   const [menuOpen,   setMenuOpen]   = useState(false)
   const [walletOpen, setWalletOpen] = useState(false)
@@ -107,8 +107,14 @@ export default function Navbar({ account, onConnect, onDisconnect, chainId, conn
             }}>
               {connecting ? 'Connecting…' : account ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 6px var(--green)' }} />
+                  <span style={{
+                    width: '7px', height: '7px', borderRadius: '50%',
+                    background: wrongNetwork ? 'var(--red)' : 'var(--green)',
+                    display: 'inline-block',
+                    boxShadow: wrongNetwork ? '0 0 6px var(--red)' : '0 0 6px var(--green)',
+                  }} />
                   {short(account)}
+                  {wrongNetwork && <span style={{ color: 'var(--red)', fontSize: '11px', fontWeight: '800' }}>⚠ Wrong network</span>}
                 </span>
               ) : 'Connect'}
             </button>
@@ -215,11 +221,25 @@ export default function Navbar({ account, onConnect, onDisconnect, chainId, conn
                 <>
                   <div style={{ padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 6px var(--green)' }} />
-                      <span style={{ fontSize: '12px', color: 'var(--green)', fontWeight: '700' }}>Connected</span>
+                      <span style={{
+                        width: '7px', height: '7px', borderRadius: '50%',
+                        background: wrongNetwork ? 'var(--red)' : 'var(--green)',
+                        display: 'inline-block',
+                        boxShadow: wrongNetwork ? '0 0 6px var(--red)' : '0 0 6px var(--green)',
+                      }} />
+                      <span style={{ fontSize: '12px', color: wrongNetwork ? 'var(--red)' : 'var(--green)', fontWeight: '700' }}>
+                        {wrongNetwork ? 'Wrong network' : 'Connected'}
+                      </span>
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--muted)', fontFamily: 'IBM Plex Mono, monospace', wordBreak: 'break-all' }}>{account}</div>
                   </div>
+                  {wrongNetwork && (
+                    <button onClick={() => onSwitchNetwork?.()} style={{
+                      width: '100%', padding: '11px', borderRadius: '10px', marginBottom: '8px',
+                      background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)',
+                      color: 'var(--red)', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                    }}>Switch to Base Sepolia</button>
+                  )}
                   <button onClick={() => { onDisconnect(); setMenuOpen(false) }} style={{
                     width: '100%', padding: '11px', borderRadius: '10px',
                     background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)',
@@ -227,13 +247,13 @@ export default function Navbar({ account, onConnect, onDisconnect, chainId, conn
                   }}>Disconnect</button>
                 </>
               ) : (
-                <button onClick={() => { onConnect(); setMenuOpen(false) }} style={{
+                <button onClick={() => { onConnect(); setMenuOpen(false) }} disabled={connecting} style={{
                   width: '100%', padding: '13px', borderRadius: '10px',
                   background: 'var(--plat)', border: 'none',
-                  color: 'var(--bg)', fontSize: '14px', fontWeight: '800', cursor: 'pointer',
-                  letterSpacing: '0.04em',
+                  color: 'var(--bg)', fontSize: '14px', fontWeight: '800', cursor: connecting ? 'default' : 'pointer',
+                  letterSpacing: '0.04em', opacity: connecting ? 0.7 : 1,
                 }}>
-                  Connect Wallet
+                  {connecting ? 'Connecting…' : 'Connect Wallet'}
                 </button>
               )}
             </div>

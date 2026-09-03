@@ -50,16 +50,13 @@ function AppInner({ Component, pageProps, router }) {
   const { address, isConnected, chainId } = useAccount()
   const { disconnect } = useDisconnect()
   const { data: walletClient } = useWalletClient()
-  const { openConnectModal } = useConnectModal()
+  const { openConnectModal, connectModalOpen } = useConnectModal()
   const { openAccountModal } = useAccountModal()
-  const [connecting, setConnecting] = useState(false)
 
   const provider = useMemo(() => walletClientToEthersProvider(walletClient), [walletClient])
 
-  const connect = async () => {
-    setConnecting(true)
+  const connect = () => {
     openConnectModal?.()
-    setConnecting(false)
   }
 
   const wrongNetwork = isConnected && chainId !== 84532
@@ -80,12 +77,17 @@ function AppInner({ Component, pageProps, router }) {
           onConnect={connect}
           onDisconnect={() => disconnect()}
           chainId={chainId}
-          connecting={connecting}
+          connecting={connectModalOpen}
+          wrongNetwork={wrongNetwork}
+          onSwitchNetwork={() => openAccountModal?.()}
         />
       )}
 
       {wrongNetwork && router.pathname !== '/admin' && router.pathname !== '/' && (
-        <div style={{ background: 'rgba(255,68,68,0.08)', borderBottom: '1px solid rgba(255,68,68,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '13px', color: 'var(--red)', zIndex: 10, position: 'relative' }}>
+        <div style={{
+          position: 'sticky', top: '64px', zIndex: 90,
+          background: 'rgba(255,68,68,0.08)', borderBottom: '1px solid rgba(255,68,68,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '13px', color: 'var(--red)',
+        }}>
           <span>Wrong network — switch to Base Sepolia</span>
           <button onClick={() => openAccountModal?.()} style={{ padding: '4px 12px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '6px', color: 'var(--red)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
             Switch Network
