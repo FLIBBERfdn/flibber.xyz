@@ -22,7 +22,27 @@ export default function SlotPage({ account, provider, onConnect }) {
   const successTimer = useRef(null)
   const quoteTimer   = useRef(null)
 
-  useEffect(() => { if (provider && account) init() }, [provider, account])
+  useEffect(() => {
+    if (account) {
+      // Use the account prop directly — it's already available the instant
+      // the wallet connects, no need to wait on an async getSigner() round
+      // trip just to learn an address we already have. This removes the
+      // lag you were seeing right after connecting.
+      setWalletAddr(account)
+      if (provider) loadBalances(account)
+    } else {
+      // Previously nothing reset here when account/provider went null on
+      // disconnect, so the page kept showing the last-connected wallet's
+      // balances and the "SLOT NOW" flow as if still connected. Reset it all.
+      setWalletAddr(null)
+      setBalances({})
+      setFibBal(0)
+      setBalancesLoaded(false)
+      setSlotCount(0)
+      setAmountIn(''); setAmountOut(''); setUsdValue(null); setQuoteError(null)
+      setError(null); setTxHash(null)
+    }
+  }, [account, provider])
 
   useEffect(() => {
     if (txHash) {
@@ -40,16 +60,6 @@ export default function SlotPage({ account, provider, onConnect }) {
     quoteTimer.current = setTimeout(() => fetchQuote(), 600)
     return () => clearTimeout(quoteTimer.current)
   }, [amountIn, tokenIn, tokenOut, provider])
-
-  const init = async () => {
-    try {
-      const { ethers } = await import('ethers')
-      const signer = await provider.getSigner()
-      const addr   = await signer.getAddress()
-      setWalletAddr(addr)
-      loadBalances(addr)
-    } catch(e) { console.error(e) }
-  }
 
   const loadBalances = async (addr) => {
     setBalancesRefreshing(true)
@@ -104,7 +114,7 @@ export default function SlotPage({ account, provider, onConnect }) {
   const hasEnoughFib     = fibBal >= fibFeeNeeded
   const hasEnoughTokenIn = amountIn ? tokenInBal >= parseFloat(amountIn) : false
   const noFib            = walletAddr && balancesLoaded && fibBal === 0
-  const lowFib           = walletAddr && balancesLoaded && amountIn && !hasEnoughFib && fibBal > 0
+  const lowFib            = walletAddr && balancesLoaded && amountIn && !hasEnoughFib && fibBal > 0
   const noTokenIn        = walletAddr && balancesLoaded && amountIn && parseFloat(amountIn) > 0 && !hasEnoughTokenIn
   const canSlot          = walletAddr && hasEnoughFib && hasEnoughTokenIn && amountIn && amountOut && !quoting && !quoteError
 
