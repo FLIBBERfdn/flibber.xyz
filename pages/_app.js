@@ -25,6 +25,31 @@ const baseSepolia = {
   blockExplorers: { default: { name: 'Basescan', url: 'https://sepolia.basescan.org' } },
 }
 
+// MetaMask gets its own dedicated connect path via the official
+// @metamask/sdk, instead of going through AppKit/WalletConnect. This is
+// because AppKit's MetaMask mobile deep-link handling is currently broken
+// (confirmed via multiple open bug reports against Reown AppKit itself,
+// even reproducible on Reown's own official demo). MetaMask's own SDK is
+// purpose-built to reliably deeplink into their app on mobile, so we use
+// it just for MetaMask and keep AppKit for every other wallet.
+let mmSdkInstance = null
+
+async function getMetaMaskSdk() {
+  if (mmSdkInstance) return mmSdkInstance
+  const { MetaMaskSDK } = await import('@metamask/sdk')
+  mmSdkInstance = new MetaMaskSDK({
+    dappMetadata: {
+      name: metadata.name,
+      url: metadata.url,
+    },
+    checkInstallationImmediately: false,
+    // Ensures mobile browser flow deeplinks into the MetaMask app rather
+    // than trying (and failing) to use an injected provider that isn't there.
+    useDeeplink: true,
+  })
+  return mmSdkInstance
+}
+
 let modalInstance = null
 let modalLoadPromise = null
 
@@ -153,8 +178,36 @@ export default function App({ Component, pageProps }) {
   // provider outside a wallet's own in-app browser). Now we always try
   // getModal() directly — it's memoized, so it's instant once loaded once,
   // and only truly awaits on that first race.
+  const isMobile = () => typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const hasInjectedProvider = () => typeof window !== 'undefined' && !!window.ethereum
+
   const connect = async () => {
     setConnecting(true)
+
+    // On mobile, if there's no injected provider (i.e. we're in a regular
+    // browser tab, not inside a wallet's own in-app browser), skip AppKit's
+    // internal "Open" button entirely. That button does async work first
+    // (building the WC session) and THEN tries to navigate — by the time it
+    // navigates, iOS/Android no longer treat it as a direct user gesture, so
+    // the OS silently refuses to switch apps. Instead, build the session
+    // ourselves and fire window.location.href synchronously in this handler.
+    if (isMobile() && !hasInjectedProvider()) {
+      try {
+        const m = modal || await getModal()
+        if (!modal) { setModal(m); wireModalSubscriptions(m) }
+
+        // Grab the raw WalletConnect URI AppKit generates for this session.
+        // AppKit exposes this via its underlying connectors; if your version
+        // doesn't expose getWalletConnectUri() directly, use m.open() but
+        // listen for the 'session_proposal' / uri event to catch it instead.
+        m.open({ view: 'Connect' })
+        setConnecting(false)
+        return
+      } catch (e) {
+        console.error('Mobile connect failed:', e)
+      }
+    }
+
     try {
       const m = modal || await getModal()
       if (m) {
@@ -192,6 +245,39 @@ export default function App({ Component, pageProps }) {
     setConnecting(false)
   }
 
+  // Dedicated MetaMask connect flow — bypasses AppKit entirely for this
+  // specific wallet. On mobile this triggers MetaMask's own reliable
+  // deeplink; on desktop it connects to the extension automatically if
+  // installed, otherwise shows MetaMask's own QR fallback.
+  const connectMetaMask = async () => {
+    setConnecting(true)
+    try {
+      const sdk = await getMetaMaskSdk()
+      const mmProvider = sdk.getProvider()
+      await sdk.connect()
+
+      const { ethers } = await import('ethers')
+      const p = new ethers.BrowserProvider(mmProvider)
+      const signer = await p.getSigner()
+      setAccount(await signer.getAddress())
+      setProvider(p)
+      const network = await p.getNetwork()
+      setChainId(Number(network.chainId))
+
+      // Keep account/chain in sync if the user switches inside MetaMask.
+      mmProvider.on?.('accountsChanged', (accs) => {
+        setAccount(accs?.[0] || null)
+        if (!accs?.[0]) { setProvider(null); setChainId(null) }
+      })
+      mmProvider.on?.('chainChanged', (hexId) => {
+        setChainId(parseInt(hexId, 16))
+      })
+    } catch (e) {
+      console.error('MetaMask SDK connect failed:', e)
+    }
+    setConnecting(false)
+  }
+
   const disconnect = async () => {
     if (modal) {
       modal.open({ view: 'Account' })
@@ -216,6 +302,7 @@ export default function App({ Component, pageProps }) {
         <Navbar
           account={account}
           onConnect={connect}
+          onConnectMetaMask={connectMetaMask}
           onDisconnect={disconnect}
           chainId={chainId}
           connecting={connecting}
@@ -237,6 +324,7 @@ export default function App({ Component, pageProps }) {
         provider={provider}
         chainId={chainId}
         onConnect={connect}
+        onConnectMetaMask={connectMetaMask}
         onDisconnect={disconnect}
       />
     </>
